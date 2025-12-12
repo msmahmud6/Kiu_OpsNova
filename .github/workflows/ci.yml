@@ -21,7 +21,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run Linter
         run: npm run lint --if-present
@@ -30,57 +30,16 @@ jobs:
         run: npm test --if-present
 
       - name: Build Application
-        id: build_step
-        run: |
-          echo "Running build: npm run build --if-present"
-          npm run build --if-present || true
-          echo "=== Top-level directory listing ==="
-          ls -la
-          echo "=== Check for common build folders ==="
-          for d in dist build out lib public; do
-            if [ -d "$d" ]; then
-              echo "Found build folder: $d"
-            fi
-          done
+        run: npm run build --if-present
 
-      # a quick step to detect artifact folders and set output
-      - name: Detect build artifact
-        id: detect_artifact
-        run: |
-          FOUND=false
-          for d in dist build out lib public; do
-            if [ -d "$d" ]; then
-              FOUND=true
-              echo "::set-output name=folder::$d"
-              break
-            fi
-          done
-          if [ "$FOUND" = "true" ]; then
-            echo "found=true" > found.txt
-            echo "::set-output name=found::true"
-          else
-            echo "found=false" > found.txt
-            echo "::set-output name=found::false"
-          fi
-        # Note: set-output is used here — GitHub supports it but if your runner enforces the newer environment-files approach,
-        # you can adapt to write to GITHUB_OUTPUT instead.
-
-      - name: Upload Build Artifact (only if found)
-        if: steps.detect_artifact.outputs.found == 'true'
+      - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: build
           path: |
-            ${{ steps.detect_artifact.outputs.folder }}
+            dist
+            build
 
-      # Build Docker image (adjust path if you have different Dockerfile)
+      # FIXED: Correct Dockerfile path
       - name: Build Docker Image
-        run: |
-          if [ -f Dockerfile ]; then
-            docker build -t kiu-opsnova-app .
-          elif [ -f docker/Dockerfile.dev ]; then
-            docker build -f docker/Dockerfile.dev -t kiu-opsnova-app .
-          else
-            echo "No Dockerfile found in root or docker/Dockerfile.dev" && exit 1
-          fi
-
+        run: docker build -f docker/Dockerfile.dev -t kiu-opsnova-app .
