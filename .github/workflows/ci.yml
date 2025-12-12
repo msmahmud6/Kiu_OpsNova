@@ -11,43 +11,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout repository
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Cache node modules
-      - name: Cache Node Modules
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      # Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      # Install dependencies
       - name: Install dependencies
         run: npm install
 
-      # Lint (safe — won’t break build unless lint script forces errors)
       - name: Run Linter
         run: npm run lint --if-present
 
-      # Run tests (safe if no tests)
       - name: Run Tests
         run: npm test --if-present
 
-      # Build the project
       - name: Build Application
         run: npm run build --if-present
 
-      # Upload build artifacts
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -56,6 +40,6 @@ jobs:
             dist
             build
 
-      # Docker build check
+      # FIXED: Correct Dockerfile path
       - name: Build Docker Image
-        run: docker build -t kiu-opsnova-app .
+        run: docker build -f docker/Dockerfile.dev -t kiu-opsnova-app .
